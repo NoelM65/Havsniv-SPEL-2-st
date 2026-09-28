@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rädda kuststaden – varför stiger havet?</title>
+<style>
+:root{--bg:#e9f1ef;--ink:#12303b;--mut:#4d6a72;--card:#fbfdfc;--line:#b9cfcc;--sea:#2b8fb0;--ice:#f4fbff;--rock:#6d7f83;--ground:#c8b98f;--warm:#d9622b;--ok:#2f8a5b;--sky:#cfe6ee;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1e24;--ink:#e3eeee;--mut:#98b1b6;--card:#172b33;--line:#2c4750;--sea:#3ba3c6;--ice:#e8f6ff;--rock:#55676b;--ground:#7c7355;--warm:#f08a55;--ok:#5cc08b;--sky:#1a3440}}
+:root[data-theme="dark"]{--bg:#0f1e24;--ink:#e3eeee;--mut:#98b1b6;--card:#172b33;--line:#2c4750;--sea:#3ba3c6;--ice:#e8f6ff;--rock:#55676b;--ground:#7c7355;--warm:#f08a55;--ok:#5cc08b;--sky:#1a3440}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:720px;margin:0 auto;padding:16px}
+h1{font:700 clamp(30px,7vw,44px)/1.1 Georgia,serif;margin:8px 0}
+h2{font:700 22px/1.25 Georgia,serif;margin:0 0 8px}
+p{margin:0 0 10px;max-width:60ch}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin:12px 0}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>div{flex:1 1 220px}
+.big{font:700 34px/1 Georgia,serif}
+svg{width:100%;height:auto;display:block;border-radius:10px;border:1px solid var(--line)}
+.bar{display:flex;height:20px;border-radius:10px;overflow:hidden;background:var(--line);margin:6px 0}
+.bar i{display:block;transition:width .6s}
+button{font:inherit;cursor:pointer}
+.opt{display:block;width:100%;text-align:left;background:var(--card);color:var(--ink);border:2px solid var(--line);border-radius:10px;padding:12px 14px;margin:8px 0;font-weight:600}
+.opt:hover{border-color:var(--sea)}
+.opt small{display:block;font-weight:400;color:var(--mut)}
+.go{background:var(--ink);color:var(--bg);border:0;border-radius:10px;padding:12px 22px;font-weight:600}
+:focus-visible{outline:3px solid var(--warm);outline-offset:2px}
+.bad{color:var(--warm);font-weight:700}.good{color:var(--ok);font-weight:700}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+var HE=[20,40,60,80,100];
+var S=null;
+function start(){S={r:0,T:1.2,E:60,th:0,ice:0,def:0,houses:HE.map(function(e){return {e:e,ok:true}}),log:null};S.log=null;render()}
+function lvl(){return S.th+S.ice}
+function alive(){return S.houses.filter(function(h){return h.ok}).length}
+function scene(){
+var y=function(cm){return 270-cm*1.2},w='',fr=Math.max(0.15,1-S.ice/70);
+w+='<rect width="600" height="300" fill="var(--sky)"/>';
+w+='<rect y="'+y(lvl())+'" width="600" height="'+(300-y(lvl()))+'" fill="var(--sea)"/>';
+w+='<polygon points="0,300 0,290 220,270 600,110 600,300" fill="var(--ground)"/>';
+w+='<rect y="128" width="170" height="20" fill="var(--rock)"/>';
+w+='<path d="M8 128 Q8 88 40 88 L'+(8+150*fr)+' 92 Q'+(20+150*fr)+' 128 '+(8+150*fr)+' 128Z" fill="var(--ice)" stroke="var(--line)"/>';
+w+='<text x="10" y="76" font-size="14" fill="var(--ink)">Is på land: '+Math.round(fr*100)+'% kvar</text>';
+if(S.def>0)w+='<rect x="214" y="'+y(S.def)+'" width="8" height="'+(270-y(S.def))+'" fill="var(--rock)"/>';
+S.houses.forEach(function(h,i){var x=250+i*62,b=270-h.e*1.2-(i*0);var gy=270-(x-220)*(160/380);
+w+='<g opacity="'+(h.ok?1:.25)+'"><rect x="'+x+'" y="'+(gy-26)+'" width="26" height="22" fill="var(--card)" stroke="var(--ink)"/><polygon points="'+(x-3)+','+(gy-26)+' '+(x+13)+','+(gy-40)+' '+(x+29)+','+(gy-26)+'" fill="var(--warm)"/></g>'});
+return '<svg viewBox="0 0 600 300" role="img" aria-label="Kuststad med hav, is och fem hus">'+w+'</svg>'}
+function stats(){
+var t=Math.max(S.th+S.ice,.001);
+return '<div class="card"><div class="row"><div><div class="big">'+(2020+S.r*20)+'</div>År</div><div><div class="big">+'+S.T.toFixed(1)+' °C</div>Uppvärmning</div><div><div class="big">'+Math.round(lvl())+' cm</div>Havet har stigit</div><div><div class="big">'+alive()+' av 5</div>Hus kvar</div></div>'+
+'<div class="bar"><i style="width:'+(S.th/t*100)+'%;background:var(--warm)"></i><i style="width:'+(S.ice/t*100)+'%;background:var(--ice)"></i></div><span class="sw" style="background:var(--warm)"></span>Vatten som värms och tar mer plats: '+Math.round(S.th)+' cm &nbsp; <span class="sw" style="background:var(--ice);border:1px solid var(--line)"></span>Is på land som smälter: '+Math.round(S.ice)+' cm</div>'}
+function render(){
+var a=document.getElementById('app'),h;
+if(!S){a.innerHTML='<h1>Rädda kuststaden</h1><div class="card"><h2>Varför stiger havet?</h2><p><b>1. Vattnet blir varmare.</b> Varmt vatten tar mer plats än kallt.</p><p><b>2. Isen på land smälter.</b> Vattnet från iskappor och glaciärer rinner ut i havet.</p><p>Båda beror på uppvärmningen, som kommer av utsläpp av koldioxid.</p></div><div class="card"><h2>Så spelar du</h2><p>Du har en stad med 5 hus. Varje runda är 20 år. Välj vad staden gör: minska utsläppen eller bygga ett skydd. Se om husen klarar stormfloden.</p></div><button class="go" id="go">Starta</button>';document.getElementById('go').onclick=start;return}
+if(S.r>=5){end(a);return}
+h=scene()+stats();
+if(!S.log){h+='<div class="card"><h2>Vad gör staden 2020–'+(2040+S.r*20)+'?</h2><button class="opt" data-c="e">Minska utsläppen<small>Sänker utsläppen med 20 enheter (nu '+S.E+'). Hjälper hela världen på sikt.</small></button><button class="opt" data-c="d">Bygg skydd<small>Höjer skyddet 20 cm direkt. Påverkar inte uppvärmningen.</small></button><button class="opt" data-c="n">Vänta<small>Ingenting ändras.</small></button></div>'}
+else h+=S.log;
+a.innerHTML=h;
+a.querySelectorAll('.opt').forEach(function(b){b.onclick=function(){pick(b.dataset.c)}});
+var n=document.getElementById('nx');if(n)n.onclick=function(){S.r++;S.log=null;render();window.scrollTo(0,0)}}
+function pick(c){
+if(c=='e')S.E=Math.max(5,S.E-20);if(c=='d')S.def+=20;
+S.T+=2*(0.03+S.E*0.0028);
+var dth=3*S.T,dice=1.8*S.T*S.T;S.th+=dth;S.ice+=dice;
+var surge=Math.round(20+Math.random()*15+S.r*4),lost=0;
+S.houses.forEach(function(h){if(h.ok&&lvl()+surge>h.e+S.def){h.ok=false;lost++}});
+var why=dice>dth?'Nu står smältande is för mest av höjningen.':'Just nu står varmare vatten för mest av höjningen.';
+S.log='<div class="card"><h2>Så gick det</h2><p>Havet steg <b>'+Math.round(dth+dice)+' cm</b> på 20 år: '+Math.round(dth)+' cm av varmare vatten och '+Math.round(dice)+' cm av smältande is. '+why+'</p><p>Stormflod: '+surge+' cm ovanpå. '+(lost?'<span class="bad">'+lost+' hus översvämmades.</span>':'<span class="good">Alla hus klarade sig.</span>')+'</p><button class="go" id="nx">'+(S.r>=4?'Se resultat':'Nästa 20 år')+'</button></div>';
+render()}
+function end(a){
+var n=alive();
+a.innerHTML='<h1>År 2100</h1>'+scene()+stats()+'<div class="card"><h2>'+n+' av 5 hus klarade sig</h2><p>'+(n>=4?'Bra! Du både minskade utsläppen och byggde skydd.':n>=2?'Delvis. Tidigare utsläppsminskningar hade gett mer marginal.':'Havet tog det mesta. Skydd räcker inte om uppvärmningen fortsätter.')+'</p></div><div class="card"><h2>Tre saker att komma ihåg</h2><p>1. Havet stiger för att vattnet värms och för att is på land smälter.</p><p>2. Uppvärmningen kommer av utsläpp, så mindre utsläpp ger lägre havshöjning.</p><p>3. Skydd hjälper mot stormfloder men löser inte orsaken.</p><p>Spelet är förenklat. IPCC bedömer att havet stiger ungefär 0,3–1 meter till 2100 beroende på utsläppen.</p></div><button class="go" id="again">Spela igen</button>';
+document.getElementById('again').onclick=start}
+render();
+</script>
+</body>
+</html>
