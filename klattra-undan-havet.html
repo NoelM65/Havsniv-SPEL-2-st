@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<title>Klättra undan havet – Quiz</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{--bg:#eaf4fb;--fg:#0b2a3c;--card:#fff;--line:#b9d4e6;--accent:#0a7ea4;--sea:#1b8fc4;--ok:#1a9b5a;--bad:#c62828;--step:#c9b79c;--stepTop:#a8946f;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1a24;--fg:#e6f2f9;--card:#13293a;--line:#24435a;--accent:#4cc3ee;--sea:#1673a0;--ok:#3ccf8a;--bad:#e05555;--step:#5a5142;--stepTop:#7a6e58}}
+:root[data-theme="dark"]{--bg:#0b1a24;--fg:#e6f2f9;--card:#13293a;--line:#24435a;--accent:#4cc3ee;--sea:#1673a0;--ok:#3ccf8a;--bad:#e05555;--step:#5a5142;--stepTop:#7a6e58}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
+main{max-width:760px;margin:0 auto;padding:16px}
+h1{font-size:1.5rem;margin:4px 0 2px}
+.sub{margin:0 0 12px;opacity:.75}
+.scene{position:relative;height:210px;border:2px solid var(--line);border-radius:14px;overflow:hidden;background:linear-gradient(var(--bg),var(--card))}
+.stairs{position:absolute;inset:0;display:flex;align-items:flex-end}
+.col{flex:1;position:relative;height:100%}
+.step{position:absolute;bottom:0;left:0;right:0;background:var(--step);border-top:5px solid var(--stepTop);border-right:1px solid var(--line)}
+.player{position:absolute;font-size:2rem;line-height:1;transition:left .6s ease,bottom .6s ease;z-index:3;transform:translateX(-50%)}
+.sea{position:absolute;left:0;right:0;bottom:0;background:var(--sea);opacity:.78;z-index:4;transition:height .8s ease;pointer-events:none}
+.sea::before{content:"";position:absolute;top:-8px;left:0;right:0;height:10px;background:repeating-radial-gradient(circle at 10px 10px,transparent 0 6px,var(--sea) 7px 10px);opacity:.9}
+.bar{display:flex;justify-content:space-between;margin:10px 2px;font-weight:600}
+.card{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:16px}
+.q{font-size:1.2rem;font-weight:700;margin:0 0 12px}
+.opts{display:grid;gap:10px}
+button{font:inherit;cursor:pointer}
+.opt{text-align:left;padding:12px 14px;border-radius:10px;border:2px solid var(--line);background:var(--bg);color:var(--fg)}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt.right{background:var(--ok);border-color:var(--ok);color:#fff}
+.opt.wrong{background:var(--bad);border-color:var(--bad);color:#fff}
+.fact{margin-top:12px;min-height:1.4em;opacity:.9;line-height:1.45}
+.btn{padding:12px 22px;border-radius:10px;border:0;background:var(--accent);color:#04202c;font-weight:700;font-size:1rem}
+.next{display:block;margin-top:12px}
+.overlay{position:fixed;inset:0;z-index:10;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
+.overlay.show{display:flex}
+#over{background:#8c0000;color:#fff;animation:flash .6s 3}
+#over h2{font-size:clamp(3.2rem,16vw,9rem);margin:0;letter-spacing:.05em;line-height:1;text-shadow:0 6px 0 #3d0000}
+#over p{font-size:1.2rem;max-width:520px}
+#win{background:#0a5c3a;color:#fff}
+#win h2{font-size:clamp(2.2rem,10vw,5rem);margin:0}
+.overlay .btn{background:#fff;color:#000;margin-top:14px}
+@keyframes flash{50%{background:#e00000}}
+</style>
+</head>
+<body>
+<main>
+  <h1>🌊 Klättra undan havet</h1>
+  <p class="sub" id="sub"></p>
+  <div class="scene" id="scene"><div class="stairs" id="stairs"></div><div class="player" id="player">🧗</div><div class="sea" id="sea"></div></div>
+  <div class="bar"><span id="prog"></span><span id="stepTxt"></span></div>
+  <div class="card">
+    <p class="q" id="q"></p>
+    <div class="opts" id="opts"></div>
+    <div class="fact" id="fact"></div>
+    <button class="btn next" id="next" style="display:none"></button>
+  </div>
+</main>
+
+<div class="overlay" id="over">
+  <h2>GAME OVER</h2>
+  <p id="overMsg"></p>
+  <p id="overScore"></p>
+  <button class="btn" id="retry">Försök igen</button>
+</div>
+<div class="overlay" id="win">
+  <h2>🎉 Du klarade dig!</h2>
+  <p>Du nådde toppen innan vattnet hann ikapp. Alla 10 rätt!</p>
+  <button class="btn" id="again">Spela igen</button>
+</div>
+
+<script>
+// Första alternativet i varje fråga är alltid det rätta – ordningen blandas när frågan visas.
+const Q=[
+{q:"Vad är de två huvudorsakerna till att havsnivån stiger globalt?",a:["Smältande landis och att varmare vatten utvidgar sig","Fler regn och starkare vindar","Att havsbottnen sjunker överallt","Att floder blir bredare","Att månens dragningskraft ökar"],f:"Termisk expansion (varmare vatten tar större plats) och smältande glaciärer och iskappor står tillsammans för nästan hela ökningen. Regn och vind påverkar bara lokalt och tillfälligt."},
+{q:"Ungefär hur mycket har den globala havsnivån stigit sedan år 1900?",a:["Cirka 20 cm","Cirka 2 cm","Cirka 50 cm","Cirka 2 meter","Cirka 5 meter"],f:"Det rör sig om omkring 20–25 cm. Det låter lite, men en liten höjning ger stora effekter när stormar och högvatten kommer ovanpå."},
+{q:"Vilken is bidrar till höjd havsnivå när den smälter?",a:["Landis, t.ex. Grönlands inlandsis","Havsis som flyter på havet","Båda lika mycket","Isen i floder och sjöar","Ingen av dem"],f:"Flytande havsis höjer knappt nivån (Arkimedes princip), men is som ligger på land och rinner ut i havet tillför nytt vatten."},
+{q:"Hur mycket skulle havet stiga om hela Grönlands inlandsis smälte?",a:["Cirka 7 meter","Cirka 70 cm","Cirka 70 meter","Cirka 700 meter","Cirka 20 cm"],f:"Grönlands is motsvarar ungefär 7 meters havsnivåhöjning. Det sker inte över en natt – det handlar om hundratals till tusentals år – men varje år bidrar Grönland redan märkbart."},
+{q:"Hur snabbt stiger havsnivån globalt just nu, i genomsnitt per år?",a:["Cirka 4 millimeter","Cirka 0,4 millimeter","Cirka 1 centimeter","Cirka 4 centimeter","Cirka 40 centimeter"],f:"Takten har ökat och ligger på runt 4 mm/år de senaste åren. Under större delen av 1900-talet var den mycket lägre, omkring 1–2 mm/år."},
+{q:"Varför sjunker havsnivån relativt land i norra Sverige trots global höjning?",a:["Landhöjning efter istiden","Mindre nederbörd","Saltare vatten","Starkare tidvatten","Att Östersjön är avsnörd"],f:"Landet höjer sig upp till ca 1 cm/år vid Bottenviken eftersom inlandsisens enorma tyngd försvann för ca 10 000 år sedan och jordskorpan fortfarande studsar tillbaka."},
+{q:"Vilken önation i Stilla havet är särskilt hotad av stigande hav?",a:["Tuvalu","Island","Madagaskar","Sri Lanka","Cypern"],f:"Tuvalu ligger bara några meter över havet. Island, Madagaskar, Sri Lanka och Cypern har alla höga landområden i inlandet."},
+{q:"Vad menas med termisk expansion?",a:["Varmare vatten tar större plats","Is som växer i kyla","Havsströmmar som växlar riktning","Vatten som avdunstar snabbare","Is som smälter vid högt tryck"],f:"När havet värms upp utvidgas vattnet och nivån stiger – helt utan att något extra vatten tillkommit. Det har stått för ungefär en tredjedel till hälften av höjningen."},
+{q:"Vilken stad sjunker snabbt och hotas dessutom av havet så att Indonesien flyttar sin huvudstad?",a:["Jakarta","Bangkok","Manila","Kuala Lumpur","Hanoi"],f:"Jakarta sjunker på sina håll flera centimeter per år på grund av grundvattenuttag, och havet gör läget värre. Därför byggs den nya huvudstaden Nusantara på Borneo."},
+{q:"Vilken typ av översvämning blir vanligare när havsnivån stiger?",a:["Stormflöden och högvatten vid kusten","Bara snösmältning i fjällen","Skyfall i öknar","Vulkanutbrott","Torka i inlandet"],f:"Med högre grundnivå når stormfloder och högvatten längre in. Det som förr inträffade en gång per sekel kan bli en årlig händelse."},
+{q:"Hur mycket skulle havet stiga om hela Antarktis inlandsis smälte?",a:["Cirka 58 meter","Cirka 6 meter","Cirka 20 meter","Cirka 150 meter","Cirka 580 meter"],f:"Antarktis rymmer ungefär 90 % av jordens landis. Västra Antarktis står för runt 5 m och östra för resten, men östra delen är betydligt stabilare."},
+{q:"Hur mäter forskare havsnivån globalt sedan 1990-talet?",a:["Med satelliter som mäter avståndet till havsytan med radar","Med flytande bojar som väger vattnet","Genom att räkna fiskbestånd","Med flygplan som mäter saltet","Med tidvattenstabeller från 1700-talet"],f:"Satellit-altimetri ger mätningar av nästan hela havet med millimeterprecision, och kompletteras av gamla tidvattenmätare vid kusten som har data långt tillbaka i tiden."},
+{q:"Vilken gas är den viktigaste orsaken till den pågående uppvärmningen?",a:["Koldioxid","Kväve","Argon","Helium","Syre"],f:"Koldioxid från fossila bränslen är den största drivkraften. Kväve utgör 78 % av luften men är ingen växthusgas, och det gäller även syre och argon."},
+{q:"Hur stor andel av den extra värme som växthusgaserna fångar upp tas upp av haven?",a:["Cirka 90 %","Cirka 10 %","Cirka 50 %","Cirka 25 %","Cirka 1 %"],f:"Haven fungerar som en gigantisk värmebuffert. Utan dem hade luften värmts upp mycket snabbare, men nu utvidgas i stället vattnet."},
+{q:"Ungefär hur stor andel av jordens befolkning bor i lågt belägna kustområden (under 10 m över havet)?",a:["Cirka 10 %","Cirka 1 %","Cirka 30 %","Cirka 50 %","Under 0,1 %"],f:"Det rör sig om närmare 900 miljoner människor, och många av världens största städer ligger vid kusten, inte minst i Asien."},
+{q:"Vilket europeiskt land ligger till ungefär en fjärdedel under havsnivån och skyddas av dammar och barriärer?",a:["Nederländerna","Schweiz","Österrike","Slovakien","Luxemburg"],f:"Nederländerna har byggt Deltawerken och Maeslantkering för att hålla havet borta. Landet satsar stort på att anpassa sig till stigande nivåer."},
+{q:"Vilken svensk landsdel har störst problem med havshöjning eftersom landhöjningen där är nästan obefintlig?",a:["Skåne och södra kusten","Norrbotten","Jämtland","Dalarna","Västerbotten"],f:"I södra Sverige tar landhöjningen i princip inte ut havshöjningen, så där märks den globala höjningen mest. Städer som Malmö och Trelleborg planerar därför skydd."},
+{q:"Vilken glaciär kallas ibland för domedagsglaciären?",a:["Thwaites i Västra Antarktis","Aletsch i Alperna","Jakobshavn på Grönland","Perito Moreno i Argentina","Kebnekaise i Sverige"],f:"Thwaites är ungefär lika stor som Storbritannien och smälter snabbt. Om den försvann helt skulle den ensam höja havet med över en halv meter, och den håller dessutom tillbaka andra isströmmar."},
+{q:"Vilken organisation sammanställer FN:s klimatrapporter om bland annat havsnivåhöjning?",a:["IPCC","WHO","FN:s säkerhetsråd","WTO","Nato"],f:"IPCC (Intergovernmental Panel on Climate Change) bildades 1988 och fick Nobels fredspris 2007 tillsammans med Al Gore. Tusentals forskare granskar den vetenskapliga litteraturen."},
+{q:"Vad är huvudmålet i Parisavtalet från 2015?",a:["Hålla uppvärmningen väl under 2 °C, helst 1,5 °C","Sänka temperaturen med 2 °C","Stoppa all biltrafik","Begränsa uppvärmningen till 5 °C","Bygga en jättelik havsmur"],f:"Målet gäller global medeltemperatur jämfört med förindustriell tid. Ju mindre uppvärmning, desto långsammare blir havshöjningen på sikt."},
+{q:"Vad menas med relativ havsnivå?",a:["Havsnivån i förhållande till land på en viss plats","Medelnivån för alla hav på jorden","Tidvattnets höjd","Skillnaden mellan hav och sjöar","Havsnivån mätt bara i Atlanten"],f:"Om land höjer sig, som i norra Sverige, eller sjunker, som i Jakarta, kan den relativa nivån skilja sig mycket från den globala."},
+{q:"Vad är saltvatteninträngning?",a:["När havsvatten tränger in i grundvatten och floder och förstör dricksvatten","Salt som sprids på vägar på vintern","Att havet blir saltare i öknar","Att salt utvinns ur havsvatten","Att fisk vandrar upp i älvar"],f:"När havet stiger kan salt ta sig in i brunnar och bevattning. Det är ett stort problem i bland annat Bangladesh och Nildeltat, där åkrar blir oanvändbara."},
+{q:"Vilket naturligt kustskydd dämpar vågor och stormfloder i tropikerna?",a:["Mangroveskogar","Barrskog","Tundra","Öken","Fjällbjörkskog"],f:"Mangrove och korallrev bryter vågenergin och binder dessutom kol. Att skydda dem är ofta billigare än att bygga betongmurar."},
+{q:"Maldiverna är världens lägst belägna land. Ungefär hur hög är medelhöjden över havet?",a:["Cirka 1,5 meter","Cirka 15 meter","Cirka 50 meter","Cirka 150 meter","Cirka 5 meter"],f:"Landets högsta naturliga punkt är bara omkring 2,4 meter. Regeringen har byggt konstgjorda öar som Hulhumalé för att ge människor högre mark."},
+{q:"Vad heter Venedigs system av rörliga barriärer mot högvatten?",a:["MOSE","Deltawerken","Thames Barrier","Maeslantkering","Oosterscheldekering"],f:"MOSE-barriärerna reses vid högvatten (acqua alta) för att skydda staden, men kritiker undrar hur länge de räcker när havet stiger."},
+{q:"Hur har takten på havsnivåhöjningen förändrats sedan 1900-talets början?",a:["Den har ökat flera gånger om","Den är oförändrad","Den har minskat","Den har stannat av","Den växlar jämnt upp och ner"],f:"Under 1900-talets början var höjningen en bit över 1 mm/år, i dag ligger den flera gånger högre. Det kallas acceleration och är ett tecken på att isen smälter snabbare."},
+{q:"Varför stiger inte havet lika mycket överallt?",a:["Strömmar, vindar, landrörelser och isens egen dragningskraft spelar in","Havsvatten är olika salt överallt","Månens fas avgör","Det beror bara på mätfel","Det är endast tidvattnet"],f:"När en stor inlandsis smälter minskar dess dragningskraft på havet, så vattnet flyttar bort från isen. Nära Grönland stiger nivån därför mindre, längre bort mer."},
+{q:"Vilket tättbefolkat land vid Bengaliska viken är extra utsatt för havshöjning?",a:["Bangladesh","Mongoliet","Nepal","Bolivia","Kazakstan"],f:"Stora delar av Gangesdeltat ligger under några meter över havet och miljontals människor bor där. Cykloner och saltvatten förvärrar läget."},
+{q:"Vad betyder det att en glaciär kalvar?",a:["Isstycken bryter loss och faller i havet","Glaciären växer snabbt","Snö pressas till is","Glaciären fryser fast vid berget","Vatten rinner under isen"],f:"Från glaciärfronten lossnar isberg som sedan driver iväg. Kalvning är en naturlig del av en glaciärs liv men har ökat på många håll."},
+{q:"Hur mycket lägre låg havsnivån under senaste istidens maximum för ca 20 000 år sedan?",a:["Cirka 120 meter","Cirka 12 meter","Cirka 400 meter","Cirka 30 meter","Cirka 1 000 meter"],f:"Så mycket vatten var bundet i inlandsisar att Nordsjön delvis var land (Doggerland). När isen smälte steg havet kraftigt under flera tusen år."}
+];
+const N=10;
+const $=id=>document.getElementById(id);
+let order,i,locked;
+$("sub").textContent="Svara rätt på frågor om stigande havsnivåer och ta ett steg uppåt. Ett fel svar = GAME OVER. "+Q.length+" frågor i poolen – "+N+" slumpas fram varje runda.";
+function shuffle(a){a=a.slice();for(let k=a.length-1;k>0;k--){const j=Math.random()*(k+1)|0;[a[k],a[j]]=[a[j],a[k]]}return a}
+function build(){
+  const st=$("stairs");st.innerHTML="";
+  for(let k=0;k<=N;k++){const c=document.createElement("div");c.className="col";const s=document.createElement("div");s.className="step";s.style.height=(14+k*(70/N))+"%";c.appendChild(s);st.appendChild(c)}
+}
+function place(){
+  const colW=100/(N+1);
+  const stepH=14+i*(70/N);
+  const p=$("player");
+  p.style.left=(colW*(i+.5))+"%";
+  p.style.bottom="calc("+stepH+"% + 4px)";
+  $("sea").style.height=(6+i*1.6)+"%";
+  $("prog").textContent="Fråga "+Math.min(i+1,N)+" av "+N;
+  $("stepTxt").textContent="Steg: "+i+" / "+N;
+}
+function show(){
+  locked=false;$("fact").textContent="";$("next").style.display="none";
+  const it=Q[order[i]];
+  $("q").textContent=it.q;
+  const o=$("opts");o.innerHTML="";
+  shuffle(it.a.map((t,idx)=>({t,ok:idx===0}))).forEach(x=>{
+    const b=document.createElement("button");b.className="opt";b.textContent=x.t;b.dataset.ok=x.ok?"1":"";
+    b.onclick=()=>answer(b,x.ok,it);o.appendChild(b);
+  });
+}
+function answer(b,ok,it){
+  if(locked)return;locked=true;
+  document.querySelectorAll(".opt").forEach(x=>x.disabled=true);
+  if(ok){
+    b.classList.add("right");$("fact").textContent="✅ Rätt! "+it.f;
+    i++;place();
+    const n=$("next");n.textContent=i>=N?"Se resultat 🎉":"Nästa fråga →";n.style.display="block";
+    n.onclick=()=>{ if(i>=N){$("win").classList.add("show")} else show() };
+  }else{
+    b.classList.add("wrong");
+    const r=document.querySelector('.opt[data-ok="1"]');if(r)r.classList.add("right");
+    $("sea").style.height="100%";
+    $("overMsg").textContent="Rätt svar: "+it.a[0]+". "+it.f;
+    $("overScore").textContent="Du hann "+i+" steg upp av "+N+".";
+    setTimeout(()=>$("over").classList.add("show"),1200);
+  }
+}
+function start(){
+  $("over").classList.remove("show");$("win").classList.remove("show");
+  order=shuffle(Q.map((_,k)=>k)).slice(0,N);i=0;build();place();show();
+}
+$("retry").onclick=start;$("again").onclick=start;
+start();
+</script>
+</body>
+</html>
