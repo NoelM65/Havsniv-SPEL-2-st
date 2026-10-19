@@ -1,0 +1,346 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Högvatten</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: affisch med tjocka konturer. Hel trappa över bredden där havet stiger, frågekort under, 2 kolumner med svar. */
+:root{
+  --bg:#5aa469;
+  --card:#f6fbf3;
+  --ink:#0e2616;
+  --line:#0e2616;
+  --shadow:#0e2616;
+  --sea:#63c5f0;--on-sea:#0e2616;
+  --sea-hatch:rgba(255,255,255,.35);
+  --sky:#d9f2fc;
+  --step:#e3f4de;
+  --cactus:#2f8a45;--on-cactus:#ffffff;
+  --hi:#bfe8fa;
+  --on-hi:#0e2616;
+  --coral:#ff7a59;
+  --ok:#0f7a3e;--on-ok:#ffffff;
+  --bad:#d93a2f;--on-bad:#ffffff;
+  --font-display:"Unbounded","Arial Black",Arial,sans-serif;
+  --font-body:"Figtree","Helvetica Neue",Arial,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d2417;--card:#163524;--ink:#e4f6e8;--line:#c9ecd3;--shadow:#03100a;
+    --sea:#4db4e4;--on-sea:#04202e;--sea-hatch:rgba(255,255,255,.22);--sky:#12384a;--step:#1e4630;
+    --cactus:#3fae5c;--on-cactus:#04180c;--hi:#9fdcf5;--on-hi:#0b2230;--coral:#ff8a6b;
+    --ok:#6ee7a0;--on-ok:#052414;--bad:#ff7a6b;--on-bad:#2a0a07;color-scheme:dark}
+}
+:root[data-theme="dark"]{
+  --bg:#0d2417;--card:#163524;--ink:#e4f6e8;--line:#c9ecd3;--shadow:#03100a;
+  --sea:#4db4e4;--on-sea:#04202e;--sea-hatch:rgba(255,255,255,.22);--sky:#12384a;--step:#1e4630;
+  --cactus:#3fae5c;--on-cactus:#04180c;--hi:#9fdcf5;--on-hi:#0b2230;--coral:#ff8a6b;
+  --ok:#6ee7a0;--on-ok:#052414;--bad:#ff7a6b;--on-bad:#2a0a07;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:1rem;line-height:1.5;
+  padding-block:22px 48px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  min-height:100%;
+}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--coral);outline-offset:3px}
+
+.app{max-width:960px;margin:0 auto;display:grid;gap:18px}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px 24px;flex-wrap:wrap}
+h1{
+  font-family:var(--font-display);font-weight:800;font-size:clamp(1.8rem,6.2vw,3.5rem);line-height:1.02;letter-spacing:-.03em;
+  margin:0;text-wrap:balance;max-width:14ch;
+}
+h1 em{font-style:normal;background:var(--sea);color:var(--on-sea);padding:0 .15em;border:3px solid var(--line);display:inline-block;transform:rotate(-1.5deg)}
+.sub{margin:0;max-width:34ch;font-weight:500;font-size:.95rem}
+
+/* Scen */
+.scene{
+  position:relative;height:clamp(200px,34vw,300px);border:3px solid var(--line);background:var(--sky);
+  box-shadow:6px 6px 0 var(--shadow);overflow:hidden;
+}
+.stairs{position:absolute;inset:0;display:flex}
+.col{flex:1;position:relative;min-width:0}
+.step{
+  position:absolute;bottom:0;left:0;right:0;background:var(--step);border:3px solid var(--line);border-bottom:0;
+  transition:background .4s;display:flex;justify-content:center;padding-top:5px;
+}
+.col+.col .step{margin-left:-3px}
+.step.reached{background:var(--cactus);color:var(--on-cactus)}
+.step span{font-family:var(--font-mono);font-weight:700;font-size:clamp(.55rem,1.8vw,.8rem);line-height:1}
+.sea{
+  position:absolute;left:0;right:0;bottom:0;z-index:2;background:var(--sea);
+  background-image:repeating-linear-gradient(135deg,transparent 0 9px,var(--sea-hatch) 9px 11px);
+  transition:height 1s cubic-bezier(.3,.7,.3,1);pointer-events:none;
+}
+.sea::before{
+  content:"";position:absolute;left:0;right:0;top:-12px;height:13px;background:var(--sea);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='13'%3E%3Cpath d='M0 13V7Q7 0 14 7T28 7V13Z'/%3E%3C/svg%3E") repeat-x 0 0/28px 13px;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='13'%3E%3Cpath d='M0 13V7Q7 0 14 7T28 7V13Z'/%3E%3C/svg%3E") repeat-x 0 0/28px 13px;
+  animation:drift 2.6s linear infinite;
+}
+@keyframes drift{to{-webkit-mask-position:28px 0;mask-position:28px 0}}
+.climber{
+  position:absolute;z-index:3;transform:translateX(-50%);line-height:0;
+  transition:left .6s cubic-bezier(.3,.7,.3,1),bottom .6s cubic-bezier(.3,.7,.3,1);
+}
+.climber svg{width:clamp(26px,5vw,38px);height:auto;display:block}
+
+/* Förlopp */
+.hud{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.pips{display:flex;gap:6px}
+.pip{width:clamp(18px,4.4vw,30px);height:14px;border:3px solid var(--line);background:var(--card);transition:background .3s}
+.pip.done{background:var(--ok)}
+.pip.now{background:var(--hi)}
+.hud-t{font-family:var(--font-mono);font-weight:700;font-size:.8rem;letter-spacing:.04em;text-transform:uppercase;font-variant-numeric:tabular-nums}
+
+/* Frågekort */
+.card{
+  position:relative;background:var(--card);border:3px solid var(--line);box-shadow:6px 6px 0 var(--shadow);
+  padding:clamp(18px,4vw,30px);
+}
+.tag{
+  display:inline-block;font-family:var(--font-mono);font-weight:700;font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;
+  background:var(--coral);color:#121212;border:2px solid var(--line);padding:2px 9px;margin:0 0 14px;
+}
+.q{
+  font-family:var(--font-display);font-weight:600;font-size:clamp(1.1rem,3.2vw,1.55rem);line-height:1.3;letter-spacing:-.015em;
+  margin:0 0 22px;text-wrap:balance;padding-right:30px;
+}
+.ask{
+  position:absolute;top:12px;right:12px;width:26px;height:26px;border-radius:50%;
+  display:grid;place-items:center;padding:0;background:none;border:2px solid var(--line);
+  font-family:var(--font-mono);font-weight:700;font-size:.8rem;line-height:1;opacity:.28;
+}
+.ask:hover,.ask:focus-visible,.ask[aria-pressed="true"]{opacity:.9}
+.opts{display:grid;gap:12px}
+@media (min-width:640px){
+  .opts{grid-template-columns:1fr 1fr}
+  .opt:last-child:nth-child(odd){grid-column:1/-1}
+}
+.opt{
+  display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+  padding:12px 14px;background:var(--card);border:3px solid var(--line);box-shadow:4px 4px 0 var(--shadow);
+  font-weight:600;transition:transform .12s,box-shadow .12s,background .12s;
+}
+.opt .k{
+  flex:none;width:28px;height:28px;display:grid;place-items:center;border:2px solid var(--line);
+  font-family:var(--font-mono);font-weight:700;font-size:.8rem;
+}
+.opt .t{flex:1;min-width:0}
+.opt:hover:not(:disabled){transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--shadow)}
+.opt:active:not(:disabled){transform:translate(3px,3px);box-shadow:1px 1px 0 var(--shadow)}
+.opt:disabled{cursor:default}
+.opt.right{background:var(--ok);color:var(--on-ok)}
+.opt.wrong{background:var(--bad);color:var(--on-bad)}
+.opt.right .k,.opt.wrong .k{border-color:currentColor}
+.opts.peeking .opt[data-ok="1"] .k{background:var(--hi);color:var(--on-hi)}
+.fact{
+  margin-top:22px;padding:14px 16px;background:var(--hi);color:var(--on-hi);border:3px solid var(--line);
+  line-height:1.5;font-weight:500;
+}
+.fact:empty{display:none}
+.fact b{font-family:var(--font-mono);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:2px}
+.row{display:flex;justify-content:flex-end;margin-top:18px}
+.row[hidden]{display:none}
+.btn{
+  padding:13px 26px;background:var(--ink);color:var(--bg);border:3px solid var(--line);box-shadow:4px 4px 0 var(--shadow);
+  font-family:var(--font-display);font-weight:600;font-size:.95rem;
+}
+.btn:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--shadow)}
+
+/* Slutlägen */
+.overlay{
+  position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  padding-block:calc(24px + env(safe-area-inset-top,0px)) calc(24px + env(safe-area-inset-bottom,0px));
+  padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));
+  animation:rise .8s cubic-bezier(.3,.7,.3,1) both;
+}
+@keyframes rise{from{clip-path:inset(100% 0 0 0)}to{clip-path:inset(0 0 0 0)}}
+#over{background:var(--sea);color:var(--on-sea)}
+#over h2{font-family:var(--font-display);font-weight:800;font-size:clamp(2.8rem,14vw,8rem);line-height:.95;letter-spacing:-.03em;margin:0;text-transform:uppercase}
+#win{background:var(--hi);color:var(--on-hi)}
+#win h2{font-family:var(--font-display);font-weight:800;font-size:clamp(2.2rem,9vw,4.6rem);line-height:1;letter-spacing:-.03em;margin:0;text-wrap:balance}
+.overlay p{font-size:1.1rem;font-weight:500;max-width:520px;margin:16px 0 0}
+.overlay .score{font-family:var(--font-mono);font-weight:700;font-size:.85rem;letter-spacing:.08em;text-transform:uppercase}
+.overlay .btn{background:var(--card);color:var(--ink);margin-top:24px}
+@media (prefers-reduced-motion:reduce){
+  .overlay{animation:none}.sea::before{animation:none}
+  .sea,.climber,.opt,.step{transition:none}
+}
+</style>
+
+<div class="app">
+  <div class="top">
+    <h1>Hög<em>vatten</em></h1>
+    <p class="sub" id="sub"></p>
+  </div>
+
+  <div class="scene" aria-hidden="true">
+    <div class="stairs" id="stairs"></div>
+    <div class="climber" id="climber">
+      <svg viewBox="0 0 30 40" aria-hidden="true"><circle cx="15" cy="9" r="7" fill="var(--coral)" stroke="var(--line)" stroke-width="3"/><path d="M5 38l3-18c1.5-4 12.500-4 14 0l3 18z" fill="var(--coral)" stroke="var(--line)" stroke-width="3" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="sea" id="sea"></div>
+  </div>
+
+  <div class="hud">
+    <div class="pips" id="pips" aria-hidden="true"></div>
+    <span class="hud-t" id="stepTxt"></span>
+  </div>
+
+  <main class="card">
+    <button class="ask" id="ask" type="button" aria-pressed="false" aria-label="Visa svar" title="Visa svar">?</button>
+    <span class="tag" id="tag"></span>
+    <h2 class="q" id="q"></h2>
+    <div class="opts" id="opts"></div>
+    <div class="fact" id="fact" aria-live="polite"></div>
+    <div class="row" id="row" hidden><button class="btn" id="next" type="button"></button></div>
+  </main>
+</div>
+
+<div class="overlay" id="over" hidden>
+  <h2>Game over</h2>
+  <p id="overMsg"></p>
+  <p class="score" id="overScore"></p>
+  <button class="btn" id="retry" type="button">Försök igen</button>
+</div>
+<div class="overlay" id="win" hidden>
+  <h2>Du klarade dig</h2>
+  <p>Du står torrt på toppen. Alla 10 rätt.</p>
+  <button class="btn" id="again" type="button">Spela igen</button>
+</div>
+
+<script>
+// Första alternativet i varje fråga är alltid det rätta. Ordningen blandas när frågan visas.
+const Q=[
+{q:"Vad är de två huvudorsakerna till att havsnivån stiger globalt?",a:["Smältande landis och att varmare vatten utvidgar sig","Fler regn och starkare vindar","Att havsbottnen sjunker överallt","Att floder blir bredare","Att månens dragningskraft ökar"],f:"Termisk expansion (varmare vatten tar större plats) och smältande glaciärer och iskappor står tillsammans för nästan hela ökningen. Regn och vind påverkar bara lokalt och tillfälligt."},
+{q:"Ungefär hur mycket har den globala havsnivån stigit sedan år 1900?",a:["Cirka 20 cm","Cirka 2 cm","Cirka 50 cm","Cirka 2 meter","Cirka 5 meter"],f:"Det rör sig om omkring 20–25 cm. Det låter lite, men en liten höjning ger stora effekter när stormar och högvatten kommer ovanpå."},
+{q:"Vilken is bidrar till höjd havsnivå när den smälter?",a:["Landis, t.ex. Grönlands inlandsis","Havsis som flyter på havet","Båda lika mycket","Isen i floder och sjöar","Ingen av dem"],f:"Flytande havsis höjer knappt nivån (Arkimedes princip), men is som ligger på land och rinner ut i havet tillför nytt vatten."},
+{q:"Hur mycket skulle havet stiga om hela Grönlands inlandsis smälte?",a:["Cirka 7 meter","Cirka 70 cm","Cirka 70 meter","Cirka 700 meter","Cirka 20 cm"],f:"Grönlands is motsvarar ungefär 7 meters havsnivåhöjning. Det sker inte över en natt, det handlar om hundratals till tusentals år, men varje år bidrar Grönland redan märkbart."},
+{q:"Hur snabbt stiger havsnivån globalt just nu, i genomsnitt per år?",a:["Cirka 4 millimeter","Cirka 0,4 millimeter","Cirka 1 centimeter","Cirka 4 centimeter","Cirka 40 centimeter"],f:"Takten har ökat och ligger på runt 4 mm/år de senaste åren. Under större delen av 1900-talet var den mycket lägre, omkring 1–2 mm/år."},
+{q:"Varför sjunker havsnivån relativt land i norra Sverige trots global höjning?",a:["Landhöjning efter istiden","Mindre nederbörd","Saltare vatten","Starkare tidvatten","Att Östersjön är avsnörd"],f:"Landet höjer sig upp till ca 1 cm/år vid Bottenviken eftersom inlandsisens enorma tyngd försvann för ca 10 000 år sedan och jordskorpan fortfarande studsar tillbaka."},
+{q:"Vilken önation i Stilla havet är särskilt hotad av stigande hav?",a:["Tuvalu","Island","Madagaskar","Sri Lanka","Cypern"],f:"Tuvalu ligger bara några meter över havet. Island, Madagaskar, Sri Lanka och Cypern har alla höga landområden i inlandet."},
+{q:"Vad menas med termisk expansion?",a:["Varmare vatten tar större plats","Is som växer i kyla","Havsströmmar som växlar riktning","Vatten som avdunstar snabbare","Is som smälter vid högt tryck"],f:"När havet värms upp utvidgas vattnet och nivån stiger, helt utan att något extra vatten tillkommit. Det har stått för ungefär en tredjedel till hälften av höjningen."},
+{q:"Vilken stad sjunker snabbt och hotas dessutom av havet så att Indonesien flyttar sin huvudstad?",a:["Jakarta","Bangkok","Manila","Kuala Lumpur","Hanoi"],f:"Jakarta sjunker på sina håll flera centimeter per år på grund av grundvattenuttag, och havet gör läget värre. Därför byggs den nya huvudstaden Nusantara på Borneo."},
+{q:"Vilken typ av översvämning blir vanligare när havsnivån stiger?",a:["Stormflöden och högvatten vid kusten","Bara snösmältning i fjällen","Skyfall i öknar","Vulkanutbrott","Torka i inlandet"],f:"Med högre grundnivå når stormfloder och högvatten längre in. Det som förr inträffade en gång per sekel kan bli en årlig händelse."},
+{q:"Hur mycket skulle havet stiga om hela Antarktis inlandsis smälte?",a:["Cirka 58 meter","Cirka 6 meter","Cirka 20 meter","Cirka 150 meter","Cirka 580 meter"],f:"Antarktis rymmer ungefär 90 % av jordens landis. Västra Antarktis står för runt 5 m och östra för resten, men östra delen är betydligt stabilare."},
+{q:"Hur mäter forskare havsnivån globalt sedan 1990-talet?",a:["Med satelliter som mäter avståndet till havsytan med radar","Med flytande bojar som väger vattnet","Genom att räkna fiskbestånd","Med flygplan som mäter saltet","Med tidvattenstabeller från 1700-talet"],f:"Satellit-altimetri ger mätningar av nästan hela havet med millimeterprecision, och kompletteras av gamla tidvattenmätare vid kusten som har data långt tillbaka i tiden."},
+{q:"Vilken gas är den viktigaste orsaken till den pågående uppvärmningen?",a:["Koldioxid","Kväve","Argon","Helium","Syre"],f:"Koldioxid från fossila bränslen är den största drivkraften. Kväve utgör 78 % av luften men är ingen växthusgas, och det gäller även syre och argon."},
+{q:"Hur stor andel av den extra värme som växthusgaserna fångar upp tas upp av haven?",a:["Cirka 90 %","Cirka 10 %","Cirka 50 %","Cirka 25 %","Cirka 1 %"],f:"Haven fungerar som en gigantisk värmebuffert. Utan dem hade luften värmts upp mycket snabbare, men nu utvidgas i stället vattnet."},
+{q:"Ungefär hur stor andel av jordens befolkning bor i lågt belägna kustområden (under 10 m över havet)?",a:["Cirka 10 %","Cirka 1 %","Cirka 30 %","Cirka 50 %","Under 0,1 %"],f:"Det rör sig om närmare 900 miljoner människor, och många av världens största städer ligger vid kusten, inte minst i Asien."},
+{q:"Vilket europeiskt land ligger till ungefär en fjärdedel under havsnivån och skyddas av dammar och barriärer?",a:["Nederländerna","Schweiz","Österrike","Slovakien","Luxemburg"],f:"Nederländerna har byggt Deltawerken och Maeslantkering för att hålla havet borta. Landet satsar stort på att anpassa sig till stigande nivåer."},
+{q:"Vilken svensk landsdel har störst problem med havshöjning eftersom landhöjningen där är nästan obefintlig?",a:["Skåne och södra kusten","Norrbotten","Jämtland","Dalarna","Västerbotten"],f:"I södra Sverige tar landhöjningen i princip inte ut havshöjningen, så där märks den globala höjningen mest. Städer som Malmö och Trelleborg planerar därför skydd."},
+{q:"Vilken glaciär kallas ibland för domedagsglaciären?",a:["Thwaites i Västra Antarktis","Aletsch i Alperna","Jakobshavn på Grönland","Perito Moreno i Argentina","Kebnekaise i Sverige"],f:"Thwaites är ungefär lika stor som Storbritannien och smälter snabbt. Om den försvann helt skulle den ensam höja havet med över en halv meter, och den håller dessutom tillbaka andra isströmmar."},
+{q:"Vilken organisation sammanställer FN:s klimatrapporter om bland annat havsnivåhöjning?",a:["IPCC","WHO","FN:s säkerhetsråd","WTO","Nato"],f:"IPCC (Intergovernmental Panel on Climate Change) bildades 1988 och fick Nobels fredspris 2007 tillsammans med Al Gore. Tusentals forskare granskar den vetenskapliga litteraturen."},
+{q:"Vad är huvudmålet i Parisavtalet från 2015?",a:["Hålla uppvärmningen väl under 2 °C, helst 1,5 °C","Sänka temperaturen med 2 °C","Stoppa all biltrafik","Begränsa uppvärmningen till 5 °C","Bygga en jättelik havsmur"],f:"Målet gäller global medeltemperatur jämfört med förindustriell tid. Ju mindre uppvärmning, desto långsammare blir havshöjningen på sikt."},
+{q:"Vad menas med relativ havsnivå?",a:["Havsnivån i förhållande till land på en viss plats","Medelnivån för alla hav på jorden","Tidvattnets höjd","Skillnaden mellan hav och sjöar","Havsnivån mätt bara i Atlanten"],f:"Om land höjer sig, som i norra Sverige, eller sjunker, som i Jakarta, kan den relativa nivån skilja sig mycket från den globala."},
+{q:"Vad är saltvatteninträngning?",a:["När havsvatten tränger in i grundvatten och floder och förstör dricksvatten","Salt som sprids på vägar på vintern","Att havet blir saltare i öknar","Att salt utvinns ur havsvatten","Att fisk vandrar upp i älvar"],f:"När havet stiger kan salt ta sig in i brunnar och bevattning. Det är ett stort problem i bland annat Bangladesh och Nildeltat, där åkrar blir oanvändbara."},
+{q:"Vilket naturligt kustskydd dämpar vågor och stormfloder i tropikerna?",a:["Mangroveskogar","Barrskog","Tundra","Öken","Fjällbjörkskog"],f:"Mangrove och korallrev bryter vågenergin och binder dessutom kol. Att skydda dem är ofta billigare än att bygga betongmurar."},
+{q:"Maldiverna är världens lägst belägna land. Ungefär hur hög är medelhöjden över havet?",a:["Cirka 1,5 meter","Cirka 15 meter","Cirka 50 meter","Cirka 150 meter","Cirka 5 meter"],f:"Landets högsta naturliga punkt är bara omkring 2,4 meter. Regeringen har byggt konstgjorda öar som Hulhumalé för att ge människor högre mark."},
+{q:"Vad heter Venedigs system av rörliga barriärer mot högvatten?",a:["MOSE","Deltawerken","Thames Barrier","Maeslantkering","Oosterscheldekering"],f:"MOSE-barriärerna reses vid högvatten (acqua alta) för att skydda staden, men kritiker undrar hur länge de räcker när havet stiger."},
+{q:"Hur har takten på havsnivåhöjningen förändrats sedan 1900-talets början?",a:["Den har ökat flera gånger om","Den är oförändrad","Den har minskat","Den har stannat av","Den växlar jämnt upp och ner"],f:"Under 1900-talets början var höjningen en bit över 1 mm/år, i dag ligger den flera gånger högre. Det kallas acceleration och är ett tecken på att isen smälter snabbare."},
+{q:"Varför stiger inte havet lika mycket överallt?",a:["Strömmar, vindar, landrörelser och isens egen dragningskraft spelar in","Havsvatten är olika salt överallt","Månens fas avgör","Det beror bara på mätfel","Det är endast tidvattnet"],f:"När en stor inlandsis smälter minskar dess dragningskraft på havet, så vattnet flyttar bort från isen. Nära Grönland stiger nivån därför mindre, längre bort mer."},
+{q:"Vilket tättbefolkat land vid Bengaliska viken är extra utsatt för havshöjning?",a:["Bangladesh","Mongoliet","Nepal","Bolivia","Kazakstan"],f:"Stora delar av Gangesdeltat ligger under några meter över havet och miljontals människor bor där. Cykloner och saltvatten förvärrar läget."},
+{q:"Vad betyder det att en glaciär kalvar?",a:["Isstycken bryter loss och faller i havet","Glaciären växer snabbt","Snö pressas till is","Glaciären fryser fast vid berget","Vatten rinner under isen"],f:"Från glaciärfronten lossnar isberg som sedan driver iväg. Kalvning är en naturlig del av en glaciärs liv men har ökat på många håll."},
+{q:"Hur mycket lägre låg havsnivån under senaste istidens maximum för ca 20 000 år sedan?",a:["Cirka 120 meter","Cirka 12 meter","Cirka 400 meter","Cirka 30 meter","Cirka 1 000 meter"],f:"Så mycket vatten var bundet i inlandsisar att Nordsjön delvis var land (Doggerland). När isen smälte steg havet kraftigt under flera tusen år."}
+];
+
+const N=10;
+const LETTERS="ABCDE";
+const $=id=>document.getElementById(id);
+let order,i,locked;
+
+$("sub").textContent="Svara rätt och kliv ur vattnet. Ett fel svar och du är under. "+Q.length+" frågor i poolen, "+N+" slumpas varje runda.";
+
+function shuffle(a){a=a.slice();for(let k=a.length-1;k>0;k--){const j=Math.random()*(k+1)|0;[a[k],a[j]]=[a[j],a[k]]}return a}
+const stepH=k=>14+k*(70/N);
+
+function build(){
+  const st=$("stairs");st.innerHTML="";
+  for(let k=0;k<=N;k++){
+    const c=document.createElement("div");c.className="col";
+    const s=document.createElement("div");s.className="step";s.style.height=stepH(k)+"%";
+    if(k>0){const l=document.createElement("span");l.textContent=k+"m";s.appendChild(l)}
+    c.appendChild(s);st.appendChild(c);
+  }
+  const p=$("pips");p.innerHTML="";
+  for(let k=0;k<N;k++){const d=document.createElement("span");d.className="pip";p.appendChild(d)}
+}
+function place(){
+  const colW=100/(N+1);
+  const c=$("climber");
+  c.style.left=(colW*(i+.5))+"%";
+  c.style.bottom=stepH(i)+"%";
+  $("sea").style.height=(6+i*5)+"%";
+  document.querySelectorAll(".step").forEach((s,k)=>s.classList.toggle("reached",k<=i));
+  document.querySelectorAll(".pip").forEach((d,k)=>{d.classList.toggle("done",k<i);d.classList.toggle("now",k===i)});
+  $("tag").textContent="Fråga "+Math.min(i+1,N);
+  $("stepTxt").textContent="Du är på "+i+" av "+N+" m";
+}
+function setPeek(on){
+  $("opts").classList.toggle("peeking",on);
+  $("ask").setAttribute("aria-pressed",on?"true":"false");
+}
+function show(){
+  locked=false;
+  $("fact").innerHTML="";$("row").hidden=true;$("ask").hidden=false;setPeek(false);
+  const it=Q[order[i]];
+  $("q").textContent=it.q;
+  const o=$("opts");o.innerHTML="";
+  shuffle(it.a.map((t,idx)=>({t,ok:idx===0}))).forEach((x,n)=>{
+    const b=document.createElement("button");b.type="button";b.className="opt";
+    b.dataset.ok=x.ok?"1":"";
+    const k=document.createElement("span");k.className="k";k.textContent=LETTERS[n];
+    const t=document.createElement("span");t.className="t";t.textContent=x.t;
+    b.append(k,t);
+    b.onclick=()=>answer(b,x.ok,it);
+    o.appendChild(b);
+  });
+}
+function answer(b,ok,it){
+  if(locked)return;locked=true;
+  document.querySelectorAll(".opt").forEach(x=>x.disabled=true);
+  $("ask").hidden=true;
+  const f=$("fact");
+  if(ok){
+    b.classList.add("right");
+    f.innerHTML="<b>Rätt</b>";f.appendChild(document.createTextNode(it.f));
+    i++;place();
+    const n=$("next");n.textContent=i>=N?"Se resultat":"Nästa fråga";$("row").hidden=false;n.focus({preventScroll:true});
+    n.onclick=()=>{ if(i>=N){$("win").hidden=false;$("again").focus({preventScroll:true})}else{show()} };
+  }else{
+    b.classList.add("wrong");
+    const r=document.querySelector('.opt[data-ok="1"]');if(r)r.classList.add("right");
+    $("sea").style.height="100%";
+    $("overMsg").textContent="Rätt svar: "+it.a[0]+". "+it.f;
+    $("overScore").textContent="Du hann upp till "+i+" av "+N+" m";
+    setTimeout(()=>{$("over").hidden=false;$("retry").focus({preventScroll:true})},1200);
+  }
+}
+function start(){
+  $("over").hidden=true;$("win").hidden=true;
+  order=shuffle(Q.map((_,k)=>k)).slice(0,N);i=0;build();place();show();
+}
+$("retry").onclick=start;$("again").onclick=start;
+$("ask").onclick=()=>setPeek(!$("opts").classList.contains("peeking"));
+
+document.addEventListener("keydown",e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  if(!$("over").hidden||!$("win").hidden)return;
+  const k=e.key.toLowerCase();
+  if(k==="?"&&!locked){setPeek(!$("opts").classList.contains("peeking"));return}
+  if(locked)return;
+  const idx="12345".indexOf(k)>=0?"12345".indexOf(k):"abcde".indexOf(k);
+  if(idx>=0){const b=document.querySelectorAll(".opt")[idx];if(b)b.click()}
+});
+
+start();
+</script>
+
+</body></html>
