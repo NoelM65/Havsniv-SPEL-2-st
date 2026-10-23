@@ -1,0 +1,605 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Högvatten Plugg</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: samma affisch som spelet. Rubrik, en vattenmätare med ett steg per fråga, tre flikar (Öva, Kort, Lista) och ett stort kort i taget. */
+:root{
+  --bg:#5aa469;
+  --card:#f6fbf3;
+  --ink:#0e2616;
+  --line:#0e2616;
+  --shadow:#0e2616;
+  --mute:#3d5a45;
+  --sea:#63c5f0;--on-sea:#0e2616;
+  --sea-hatch:rgba(255,255,255,.35);
+  --hi:#bfe8fa;--on-hi:#0e2616;
+  --coral:#ff7a59;
+  --ok:#0f7a3e;--on-ok:#ffffff;
+  --bad:#d93a2f;--on-bad:#ffffff;
+  --font-display:"Unbounded","Arial Black",Arial,sans-serif;
+  --font-body:"Figtree","Helvetica Neue",Arial,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d2417;--card:#163524;--ink:#e4f6e8;--line:#c9ecd3;--shadow:#03100a;--mute:#a9cdb4;
+    --sea:#4db4e4;--on-sea:#04202e;--sea-hatch:rgba(255,255,255,.22);
+    --hi:#9fdcf5;--on-hi:#0b2230;--coral:#ff8a6b;
+    --ok:#6ee7a0;--on-ok:#052414;--bad:#ff7a6b;--on-bad:#2a0a07;color-scheme:dark}
+}
+:root[data-theme="dark"]{
+  --bg:#0d2417;--card:#163524;--ink:#e4f6e8;--line:#c9ecd3;--shadow:#03100a;--mute:#a9cdb4;
+  --sea:#4db4e4;--on-sea:#04202e;--sea-hatch:rgba(255,255,255,.22);
+  --hi:#9fdcf5;--on-hi:#0b2230;--coral:#ff8a6b;
+  --ok:#6ee7a0;--on-ok:#052414;--bad:#ff7a6b;--on-bad:#2a0a07;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:1rem;line-height:1.5;
+  padding-block:22px 56px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  min-height:100%;
+}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--coral);outline-offset:3px}
+
+.app{max-width:960px;margin:0 auto;display:grid;gap:18px}
+.app>*{min-width:0}
+.panel{display:grid;gap:18px}
+.panel>*{min-width:0}
+
+/* Rubrik */
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px 24px;flex-wrap:wrap}
+h1{
+  font-family:var(--font-display);font-weight:800;font-size:clamp(1.8rem,6.2vw,3.5rem);line-height:1.02;letter-spacing:-.03em;
+  margin:0;text-wrap:balance;max-width:14ch;
+}
+h1 em{font-style:normal;background:var(--sea);color:var(--on-sea);padding:0 .15em;border:3px solid var(--line);display:inline-block;transform:rotate(-1.5deg)}
+.sub{margin:0;max-width:36ch;font-weight:500;font-size:.95rem}
+.tag{
+  display:inline-block;font-family:var(--font-mono);font-weight:700;font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;
+  background:var(--coral);color:#121212;border:2px solid var(--line);padding:2px 9px;margin:0;
+}
+.sub .tag{display:block;width:max-content;margin-bottom:8px}
+
+/* Vattenmätare */
+.gauge{display:grid;gap:10px}
+.gauge-head{display:flex;align-items:center;justify-content:space-between;gap:8px 16px;flex-wrap:wrap}
+.gauge-t{margin:0;font-family:var(--font-mono);font-weight:700;font-size:.85rem;letter-spacing:.04em;text-transform:uppercase;font-variant-numeric:tabular-nums}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;list-style:none;margin:0;padding:0;font-size:.75rem;font-weight:600}
+.legend li{display:flex;align-items:center;gap:6px}
+.legend i{width:14px;height:14px;border:2px solid var(--line);display:block}
+.cells{--narrow:15;--wide:30;display:grid;grid-template-columns:repeat(var(--narrow),minmax(0,1fr));gap:4px}
+@media (min-width:700px){.cells{grid-template-columns:repeat(var(--wide),minmax(0,1fr))}}
+.cell{
+  aspect-ratio:1/1.1;max-width:100%;border:2px solid var(--line);display:grid;place-items:center;
+  font-family:var(--font-mono);font-weight:700;font-size:clamp(.55rem,1.6vw,.72rem);line-height:1;
+  font-variant-numeric:tabular-nums;transition:background .3s;
+}
+.s-new{background:var(--card);color:var(--ink)}
+.s-miss{background:var(--coral);color:#121212}
+.s-1{background:var(--hi);color:var(--on-hi)}
+.s-2{background:var(--sea);color:var(--on-sea);background-image:repeating-linear-gradient(135deg,transparent 0 5px,var(--sea-hatch) 5px 7px)}
+.s-3{background:var(--ok);color:var(--on-ok)}
+
+/* Flikar */
+.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.tab{
+  display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 14px;text-align:left;
+  background:var(--card);color:var(--ink);border:3px solid var(--line);box-shadow:4px 4px 0 var(--shadow);
+  transition:transform .12s,box-shadow .12s,background .12s;
+}
+.tab span{font-family:var(--font-display);font-weight:600;font-size:1rem;letter-spacing:-.01em}
+.tab small{font-family:var(--font-mono);font-weight:700;font-size:.68rem;letter-spacing:.04em;text-transform:uppercase}
+.tab:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--shadow)}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg);transform:translate(2px,2px);box-shadow:1px 1px 0 var(--shadow)}
+
+/* Kort */
+.card{
+  position:relative;background:var(--card);border:3px solid var(--line);box-shadow:6px 6px 0 var(--shadow);
+  padding:clamp(18px,4vw,30px);
+}
+.meta{display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;margin:0 0 14px}
+.meta-t{font-family:var(--font-mono);font-weight:700;font-size:.75rem;letter-spacing:.04em;text-transform:uppercase;font-variant-numeric:tabular-nums}
+.mp{display:flex;gap:4px}
+.mp i{width:20px;height:12px;border:2px solid var(--line);background:var(--card);display:block;transition:background .3s}
+.mp i.on{background:var(--ok)}
+.q{
+  font-family:var(--font-display);font-weight:600;font-size:clamp(1.1rem,3.2vw,1.55rem);line-height:1.3;letter-spacing:-.015em;
+  margin:0 0 22px;text-wrap:balance;
+}
+.note{margin:0 0 4px;font-weight:500;max-width:60ch}
+.opts{display:grid;gap:12px}
+@media (min-width:640px){
+  .opts{grid-template-columns:1fr 1fr}
+  .opt:last-child:nth-child(odd){grid-column:1/-1}
+}
+.opt{
+  display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+  padding:12px 14px;background:var(--card);border:3px solid var(--line);box-shadow:4px 4px 0 var(--shadow);
+  font-weight:600;transition:transform .12s,box-shadow .12s,background .12s;
+}
+.opt .k{
+  flex:none;width:28px;height:28px;display:grid;place-items:center;border:2px solid var(--line);
+  font-family:var(--font-mono);font-weight:700;font-size:.8rem;
+}
+.opt .t{flex:1;min-width:0}
+.opt:hover:not(:disabled){transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--shadow)}
+.opt:active:not(:disabled){transform:translate(3px,3px);box-shadow:1px 1px 0 var(--shadow)}
+.opt:disabled{cursor:default}
+.opt.right{background:var(--ok);color:var(--on-ok)}
+.opt.wrong{background:var(--bad);color:var(--on-bad)}
+.opt.right .k,.opt.wrong .k{border-color:currentColor}
+.fact{
+  margin-top:22px;padding:14px 16px;background:var(--hi);color:var(--on-hi);border:3px solid var(--line);
+  line-height:1.5;font-weight:500;
+}
+.fact:empty{display:none}
+.fact b{font-family:var(--font-mono);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:2px}
+.fact p{margin:8px 0 0;font-weight:700}
+.row{display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin-top:18px}
+.btn{
+  padding:13px 26px;background:var(--ink);color:var(--bg);border:3px solid var(--line);box-shadow:4px 4px 0 var(--shadow);
+  font-family:var(--font-display);font-weight:600;font-size:.95rem;transition:transform .12s,box-shadow .12s;
+}
+.btn:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--shadow)}
+.btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--shadow)}
+.btn.alt{background:var(--card);color:var(--ink)}
+.btn.sm{padding:8px 14px;font-size:.8rem;box-shadow:3px 3px 0 var(--shadow)}
+
+.foot,.ctl,.tools-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 18px}
+.foot .meta-t,.hud .meta-t,.tools .meta-t{color:var(--ink)}
+.chk{display:flex;align-items:center;gap:8px;font-weight:600;font-size:.9rem}
+.chk input{width:20px;height:20px;accent-color:var(--ok);margin:0}
+.fld{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.9rem}
+select,input[type="search"]{
+  background:var(--card);color:var(--ink);border:3px solid var(--line);padding:8px 10px;font-weight:600;border-radius:0;min-width:0;
+}
+.hud{display:grid;gap:8px}
+.bar{height:16px;border:3px solid var(--line);background:var(--card)}
+.bar i{
+  display:block;height:100%;width:0;background:var(--sea);
+  background-image:repeating-linear-gradient(135deg,transparent 0 5px,var(--sea-hatch) 5px 7px);transition:width .4s;
+}
+.ans-block{
+  margin-top:4px;padding:14px 16px;background:var(--ok);color:var(--on-ok);border:3px solid var(--line);font-weight:700;
+}
+.ans-block b{font-family:var(--font-mono);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:2px}
+.rate{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+.rate .btn{width:100%;padding-inline:12px}
+
+/* Lista */
+.tools{display:grid;gap:12px}
+.search{flex:1 1 220px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.fchip{padding:6px 12px;border:3px solid var(--line);background:var(--card);color:var(--ink);font-weight:700;font-size:.85rem}
+.fchip[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.items{display:grid;gap:12px}
+.item{background:var(--card);border:3px solid var(--line);box-shadow:4px 4px 0 var(--shadow)}
+.item summary{
+  display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"num chip pm" "q q q";gap:6px 12px;align-items:center;
+  padding:12px 14px;cursor:pointer;list-style:none;font-weight:600;
+}
+.item summary::-webkit-details-marker{display:none}
+@media (min-width:640px){
+  .item summary{grid-template-columns:auto minmax(0,1fr) auto auto;grid-template-areas:"num q chip pm"}
+}
+.num{grid-area:num;font-family:var(--font-mono);font-weight:700;font-size:.8rem}
+.qt{grid-area:q;min-width:0}
+.chip{
+  grid-area:chip;justify-self:start;font-family:var(--font-mono);font-weight:700;font-size:.7rem;letter-spacing:.06em;
+  text-transform:uppercase;padding:2px 8px;border:2px solid var(--line);
+}
+.pm{grid-area:pm;font-family:var(--font-mono);font-weight:700;font-size:1.1rem;line-height:1}
+.pm::before{content:"+"}
+.item[open] .pm::before{content:"\2212"}
+.item[open] summary{border-bottom:3px solid var(--line)}
+.item .body{padding:14px;display:grid;gap:12px}
+.item .fact{margin-top:0}
+.wr-t{font-family:var(--font-mono);font-weight:700;font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin:0 0 4px}
+.wr{margin:0;padding:0;list-style:none;display:grid;gap:2px;color:var(--mute);font-weight:500}
+.wr li::before{content:"\00d7\00a0";font-family:var(--font-mono);font-weight:700}
+.stat{margin:0;font-family:var(--font-mono);font-weight:700;font-size:.75rem;letter-spacing:.04em;text-transform:uppercase;color:var(--mute);font-variant-numeric:tabular-nums}
+
+@media (prefers-reduced-motion:reduce){
+  .opt,.tab,.btn,.cell,.mp i,.bar i{transition:none}
+}
+</style>
+
+<div class="app">
+  <header class="top">
+    <h1>Hög<em>vatten</em></h1>
+    <p class="sub"><span class="tag">Plugg</span><span id="sub"></span></p>
+  </header>
+
+  <section class="gauge" aria-labelledby="gaugeTxt">
+    <div class="gauge-head">
+      <h2 class="gauge-t" id="gaugeTxt"></h2>
+      <ul class="legend" aria-hidden="true">
+        <li><i class="s-new"></i>Ny</li>
+        <li><i class="s-miss"></i>Missad</li>
+        <li><i class="s-1"></i>1 rätt</li>
+        <li><i class="s-2"></i>2 rätt</li>
+        <li><i class="s-3"></i>Klar</li>
+      </ul>
+    </div>
+    <div class="cells" id="cells" aria-hidden="true"></div>
+  </section>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Studieläge">
+    <button class="tab" id="tab-ova" role="tab" type="button" aria-controls="p-ova" aria-selected="true"><span>Öva</span><small id="tabOvaN"></small></button>
+    <button class="tab" id="tab-kort" role="tab" type="button" aria-controls="p-kort" aria-selected="false" tabindex="-1"><span>Kort</span><small>Vänd och bedöm</small></button>
+    <button class="tab" id="tab-lista" role="tab" type="button" aria-controls="p-lista" aria-selected="false" tabindex="-1"><span>Lista</span><small>Alla svar</small></button>
+  </nav>
+
+  <section class="panel" id="p-ova" role="tabpanel" aria-labelledby="tab-ova">
+    <div class="card" id="quiz">
+      <div class="meta">
+        <span class="tag" id="qTag"></span>
+        <span class="mp" id="pips" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="meta-t" id="qState"></span>
+      </div>
+      <h2 class="q" id="q"></h2>
+      <div class="opts" id="opts"></div>
+      <div class="fact" id="fact" aria-live="polite"></div>
+      <div class="row" id="row" hidden><button class="btn" id="next" type="button">Nästa fråga</button></div>
+    </div>
+    <div class="card" id="allDone" hidden>
+      <h2 class="q">Alla frågor är klara</h2>
+      <p class="note">Du har svarat rätt tre gånger i rad på varje fråga. Kör repetition för att ta med de klara frågorna igen. Ett fel där nollställer frågan.</p>
+      <div class="row"><button class="btn" id="doneReview" type="button">Repetera alla</button></div>
+    </div>
+    <div class="foot">
+      <span class="meta-t" id="sess"></span>
+      <label class="chk" for="incDone"><input type="checkbox" id="incDone">Ta med klara frågor</label>
+      <button class="btn alt sm" id="reset" type="button">Nollställ framsteg</button>
+    </div>
+  </section>
+
+  <section class="panel" id="p-kort" role="tabpanel" aria-labelledby="tab-kort" hidden>
+    <div class="ctl">
+      <label class="fld" for="fcSet">Hög
+        <select id="fcSet">
+          <option value="all">Alla frågor</option>
+          <option value="open">Inte klara i Öva</option>
+          <option value="hard">Missade</option>
+        </select>
+      </label>
+      <label class="chk" for="fcShuffle"><input type="checkbox" id="fcShuffle" checked>Blanda</label>
+      <button class="btn alt sm" id="fcRestart" type="button">Börja om</button>
+    </div>
+    <div class="hud">
+      <div class="bar" aria-hidden="true"><i id="fcBar"></i></div>
+      <span class="meta-t" id="fcLeft"></span>
+    </div>
+    <div class="card" id="fcCard"></div>
+  </section>
+
+  <section class="panel" id="p-lista" role="tabpanel" aria-labelledby="tab-lista" hidden>
+    <div class="tools">
+      <div class="tools-row">
+        <input class="search" id="search" type="search" placeholder="Sök i frågor, svar och förklaringar" aria-label="Sök i frågorna">
+        <select id="sort" aria-label="Sortera">
+          <option value="orig">Ordning i spelet</option>
+          <option value="hard">Svåraste först</option>
+        </select>
+      </div>
+      <div class="chips" role="group" aria-label="Filter">
+        <button class="fchip" type="button" data-f="all" aria-pressed="true">Alla</button>
+        <button class="fchip" type="button" data-f="hard" aria-pressed="false">Missade</button>
+        <button class="fchip" type="button" data-f="open" aria-pressed="false">Inte klara</button>
+        <button class="fchip" type="button" data-f="done" aria-pressed="false">Klara</button>
+      </div>
+      <div class="tools-row">
+        <span class="meta-t" id="count"></span>
+        <button class="btn alt sm" id="openAll" type="button">Öppna alla</button>
+      </div>
+    </div>
+    <div class="items" id="items"></div>
+  </section>
+</div>
+
+<script>
+// Första alternativet i varje fråga är alltid det rätta. Ordningen blandas när frågan visas.
+const Q=[
+{q:"Vad är de två huvudorsakerna till att havsnivån stiger globalt?",a:["Smältande landis och att varmare vatten utvidgar sig","Fler regn och starkare vindar","Att havsbottnen sjunker överallt","Att floder blir bredare","Att månens dragningskraft ökar"],f:"Termisk expansion (varmare vatten tar större plats) och smältande glaciärer och iskappor står tillsammans för nästan hela ökningen. Regn och vind påverkar bara lokalt och tillfälligt."},
+{q:"Ungefär hur mycket har den globala havsnivån stigit sedan år 1900?",a:["Cirka 20 cm","Cirka 2 cm","Cirka 50 cm","Cirka 2 meter","Cirka 5 meter"],f:"Det rör sig om omkring 20–25 cm. Det låter lite, men en liten höjning ger stora effekter när stormar och högvatten kommer ovanpå."},
+{q:"Vilken is bidrar till höjd havsnivå när den smälter?",a:["Landis, t.ex. Grönlands inlandsis","Havsis som flyter på havet","Båda lika mycket","Isen i floder och sjöar","Ingen av dem"],f:"Flytande havsis höjer knappt nivån (Arkimedes princip), men is som ligger på land och rinner ut i havet tillför nytt vatten."},
+{q:"Hur mycket skulle havet stiga om hela Grönlands inlandsis smälte?",a:["Cirka 7 meter","Cirka 70 cm","Cirka 70 meter","Cirka 700 meter","Cirka 20 cm"],f:"Grönlands is motsvarar ungefär 7 meters havsnivåhöjning. Det sker inte över en natt, det handlar om hundratals till tusentals år, men varje år bidrar Grönland redan märkbart."},
+{q:"Hur snabbt stiger havsnivån globalt just nu, i genomsnitt per år?",a:["Cirka 4 millimeter","Cirka 0,4 millimeter","Cirka 1 centimeter","Cirka 4 centimeter","Cirka 40 centimeter"],f:"Takten har ökat och ligger på runt 4 mm/år de senaste åren. Under större delen av 1900-talet var den mycket lägre, omkring 1–2 mm/år."},
+{q:"Varför sjunker havsnivån relativt land i norra Sverige trots global höjning?",a:["Landhöjning efter istiden","Mindre nederbörd","Saltare vatten","Starkare tidvatten","Att Östersjön är avsnörd"],f:"Landet höjer sig upp till ca 1 cm/år vid Bottenviken eftersom inlandsisens enorma tyngd försvann för ca 10 000 år sedan och jordskorpan fortfarande studsar tillbaka."},
+{q:"Vilken önation i Stilla havet är särskilt hotad av stigande hav?",a:["Tuvalu","Island","Madagaskar","Sri Lanka","Cypern"],f:"Tuvalu ligger bara några meter över havet. Island, Madagaskar, Sri Lanka och Cypern har alla höga landområden i inlandet."},
+{q:"Vad menas med termisk expansion?",a:["Varmare vatten tar större plats","Is som växer i kyla","Havsströmmar som växlar riktning","Vatten som avdunstar snabbare","Is som smälter vid högt tryck"],f:"När havet värms upp utvidgas vattnet och nivån stiger, helt utan att något extra vatten tillkommit. Det har stått för ungefär en tredjedel till hälften av höjningen."},
+{q:"Vilken stad sjunker snabbt och hotas dessutom av havet så att Indonesien flyttar sin huvudstad?",a:["Jakarta","Bangkok","Manila","Kuala Lumpur","Hanoi"],f:"Jakarta sjunker på sina håll flera centimeter per år på grund av grundvattenuttag, och havet gör läget värre. Därför byggs den nya huvudstaden Nusantara på Borneo."},
+{q:"Vilken typ av översvämning blir vanligare när havsnivån stiger?",a:["Stormflöden och högvatten vid kusten","Bara snösmältning i fjällen","Skyfall i öknar","Vulkanutbrott","Torka i inlandet"],f:"Med högre grundnivå når stormfloder och högvatten längre in. Det som förr inträffade en gång per sekel kan bli en årlig händelse."},
+{q:"Hur mycket skulle havet stiga om hela Antarktis inlandsis smälte?",a:["Cirka 58 meter","Cirka 6 meter","Cirka 20 meter","Cirka 150 meter","Cirka 580 meter"],f:"Antarktis rymmer ungefär 90 % av jordens landis. Västra Antarktis står för runt 5 m och östra för resten, men östra delen är betydligt stabilare."},
+{q:"Hur mäter forskare havsnivån globalt sedan 1990-talet?",a:["Med satelliter som mäter avståndet till havsytan med radar","Med flytande bojar som väger vattnet","Genom att räkna fiskbestånd","Med flygplan som mäter saltet","Med tidvattenstabeller från 1700-talet"],f:"Satellit-altimetri ger mätningar av nästan hela havet med millimeterprecision, och kompletteras av gamla tidvattenmätare vid kusten som har data långt tillbaka i tiden."},
+{q:"Vilken gas är den viktigaste orsaken till den pågående uppvärmningen?",a:["Koldioxid","Kväve","Argon","Helium","Syre"],f:"Koldioxid från fossila bränslen är den största drivkraften. Kväve utgör 78 % av luften men är ingen växthusgas, och det gäller även syre och argon."},
+{q:"Hur stor andel av den extra värme som växthusgaserna fångar upp tas upp av haven?",a:["Cirka 90 %","Cirka 10 %","Cirka 50 %","Cirka 25 %","Cirka 1 %"],f:"Haven fungerar som en gigantisk värmebuffert. Utan dem hade luften värmts upp mycket snabbare, men nu utvidgas i stället vattnet."},
+{q:"Ungefär hur stor andel av jordens befolkning bor i lågt belägna kustområden (under 10 m över havet)?",a:["Cirka 10 %","Cirka 1 %","Cirka 30 %","Cirka 50 %","Under 0,1 %"],f:"Det rör sig om närmare 900 miljoner människor, och många av världens största städer ligger vid kusten, inte minst i Asien."},
+{q:"Vilket europeiskt land ligger till ungefär en fjärdedel under havsnivån och skyddas av dammar och barriärer?",a:["Nederländerna","Schweiz","Österrike","Slovakien","Luxemburg"],f:"Nederländerna har byggt Deltawerken och Maeslantkering för att hålla havet borta. Landet satsar stort på att anpassa sig till stigande nivåer."},
+{q:"Vilken svensk landsdel har störst problem med havshöjning eftersom landhöjningen där är nästan obefintlig?",a:["Skåne och södra kusten","Norrbotten","Jämtland","Dalarna","Västerbotten"],f:"I södra Sverige tar landhöjningen i princip inte ut havshöjningen, så där märks den globala höjningen mest. Städer som Malmö och Trelleborg planerar därför skydd."},
+{q:"Vilken glaciär kallas ibland för domedagsglaciären?",a:["Thwaites i Västra Antarktis","Aletsch i Alperna","Jakobshavn på Grönland","Perito Moreno i Argentina","Kebnekaise i Sverige"],f:"Thwaites är ungefär lika stor som Storbritannien och smälter snabbt. Om den försvann helt skulle den ensam höja havet med över en halv meter, och den håller dessutom tillbaka andra isströmmar."},
+{q:"Vilken organisation sammanställer FN:s klimatrapporter om bland annat havsnivåhöjning?",a:["IPCC","WHO","FN:s säkerhetsråd","WTO","Nato"],f:"IPCC (Intergovernmental Panel on Climate Change) bildades 1988 och fick Nobels fredspris 2007 tillsammans med Al Gore. Tusentals forskare granskar den vetenskapliga litteraturen."},
+{q:"Vad är huvudmålet i Parisavtalet från 2015?",a:["Hålla uppvärmningen väl under 2 °C, helst 1,5 °C","Sänka temperaturen med 2 °C","Stoppa all biltrafik","Begränsa uppvärmningen till 5 °C","Bygga en jättelik havsmur"],f:"Målet gäller global medeltemperatur jämfört med förindustriell tid. Ju mindre uppvärmning, desto långsammare blir havshöjningen på sikt."},
+{q:"Vad menas med relativ havsnivå?",a:["Havsnivån i förhållande till land på en viss plats","Medelnivån för alla hav på jorden","Tidvattnets höjd","Skillnaden mellan hav och sjöar","Havsnivån mätt bara i Atlanten"],f:"Om land höjer sig, som i norra Sverige, eller sjunker, som i Jakarta, kan den relativa nivån skilja sig mycket från den globala."},
+{q:"Vad är saltvatteninträngning?",a:["När havsvatten tränger in i grundvatten och floder och förstör dricksvatten","Salt som sprids på vägar på vintern","Att havet blir saltare i öknar","Att salt utvinns ur havsvatten","Att fisk vandrar upp i älvar"],f:"När havet stiger kan salt ta sig in i brunnar och bevattning. Det är ett stort problem i bland annat Bangladesh och Nildeltat, där åkrar blir oanvändbara."},
+{q:"Vilket naturligt kustskydd dämpar vågor och stormfloder i tropikerna?",a:["Mangroveskogar","Barrskog","Tundra","Öken","Fjällbjörkskog"],f:"Mangrove och korallrev bryter vågenergin och binder dessutom kol. Att skydda dem är ofta billigare än att bygga betongmurar."},
+{q:"Maldiverna är världens lägst belägna land. Ungefär hur hög är medelhöjden över havet?",a:["Cirka 1,5 meter","Cirka 15 meter","Cirka 50 meter","Cirka 150 meter","Cirka 5 meter"],f:"Landets högsta naturliga punkt är bara omkring 2,4 meter. Regeringen har byggt konstgjorda öar som Hulhumalé för att ge människor högre mark."},
+{q:"Vad heter Venedigs system av rörliga barriärer mot högvatten?",a:["MOSE","Deltawerken","Thames Barrier","Maeslantkering","Oosterscheldekering"],f:"MOSE-barriärerna reses vid högvatten (acqua alta) för att skydda staden, men kritiker undrar hur länge de räcker när havet stiger."},
+{q:"Hur har takten på havsnivåhöjningen förändrats sedan 1900-talets början?",a:["Den har ökat flera gånger om","Den är oförändrad","Den har minskat","Den har stannat av","Den växlar jämnt upp och ner"],f:"Under 1900-talets början var höjningen en bit över 1 mm/år, i dag ligger den flera gånger högre. Det kallas acceleration och är ett tecken på att isen smälter snabbare."},
+{q:"Varför stiger inte havet lika mycket överallt?",a:["Strömmar, vindar, landrörelser och isens egen dragningskraft spelar in","Havsvatten är olika salt överallt","Månens fas avgör","Det beror bara på mätfel","Det är endast tidvattnet"],f:"När en stor inlandsis smälter minskar dess dragningskraft på havet, så vattnet flyttar bort från isen. Nära Grönland stiger nivån därför mindre, längre bort mer."},
+{q:"Vilket tättbefolkat land vid Bengaliska viken är extra utsatt för havshöjning?",a:["Bangladesh","Mongoliet","Nepal","Bolivia","Kazakstan"],f:"Stora delar av Gangesdeltat ligger under några meter över havet och miljontals människor bor där. Cykloner och saltvatten förvärrar läget."},
+{q:"Vad betyder det att en glaciär kalvar?",a:["Isstycken bryter loss och faller i havet","Glaciären växer snabbt","Snö pressas till is","Glaciären fryser fast vid berget","Vatten rinner under isen"],f:"Från glaciärfronten lossnar isberg som sedan driver iväg. Kalvning är en naturlig del av en glaciärs liv men har ökat på många håll."},
+{q:"Hur mycket lägre låg havsnivån under senaste istidens maximum för ca 20 000 år sedan?",a:["Cirka 120 meter","Cirka 12 meter","Cirka 400 meter","Cirka 30 meter","Cirka 1 000 meter"],f:"Så mycket vatten var bundet i inlandsisar att Nordsjön delvis var land (Doggerland). När isen smälte steg havet kraftigt under flera tusen år."}
+];
+
+const NEED=3,LETTERS="ABCDE",KEY="hogvatten-plugg-v1";
+const $=id=>document.getElementById(id);
+const pad=i=>String(i+1).padStart(2,"0");
+function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
+function shuffle(a){a=a.slice();for(let k=a.length-1;k>0;k--){const j=Math.random()*(k+1)|0;[a[k],a[j]]=[a[j],a[k]]}return a}
+
+/* Framsteg sparas per fråga (nyckel = frågetexten) i webbläsaren */
+let prog={};
+try{const raw=localStorage.getItem(KEY);if(raw){const o=JSON.parse(raw);if(o&&typeof o==="object")prog=o}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(prog))}catch(e){}}
+function P(i){const p=prog[Q[i].q];return p&&typeof p==="object"?{s:+p.s||0,r:+p.r||0,w:+p.w||0}:{s:0,r:0,w:0}}
+function setP(i,p){prog[Q[i].q]=p;save()}
+function status(i){
+  const p=P(i);
+  if(p.s>=NEED)return{k:"3",t:"Klar"};
+  if(p.s===2)return{k:"2",t:"2 av 3"};
+  if(p.s===1)return{k:"1",t:"1 av 3"};
+  if(p.w>0)return{k:"miss",t:"Missad"};
+  return{k:"new",t:"Ny"};
+}
+
+$("sub").textContent="Alla "+Q.length+" frågor från spelet. Tre rätt i rad klarar en fråga. Ett fel nollställer den.";
+
+/* Vattenmätare */
+function renderGauge(){
+  const c=$("cells");
+  if(!c.children.length){
+    c.style.setProperty("--wide",Q.length);
+    c.style.setProperty("--narrow",Math.ceil(Q.length/2));
+    Q.forEach((_,i)=>{c.appendChild(el("span","cell",i+1))});
+  }
+  let done=0,miss=0;
+  Q.forEach((_,i)=>{
+    const st=status(i),p=P(i);
+    if(st.k==="3")done++;else if(p.w>0)miss++;
+    const d=c.children[i];d.className="cell s-"+st.k;d.title="#"+pad(i)+" "+st.t;
+  });
+  $("gaugeTxt").textContent=done+" av "+Q.length+" klara"+(miss?" · "+miss+" missade":"");
+  const left=Q.length-done;
+  $("tabOvaN").textContent=left?left+" kvar":"Alla klara";
+}
+
+/* Flikar */
+const TABS=["ova","kort","lista"];
+function showTab(n){
+  TABS.forEach(t=>{
+    const on=t===n;
+    $("p-"+t).hidden=!on;
+    const b=$("tab-"+t);b.setAttribute("aria-selected",on?"true":"false");b.tabIndex=on?0:-1;
+  });
+  if(n==="lista")renderList();
+  if(n==="kort"&&!fcDirty)buildDeck();
+}
+TABS.forEach(t=>{$("tab-"+t).onclick=()=>showTab(t)});
+$("tabs").addEventListener("keydown",e=>{
+  if(e.key!=="ArrowRight"&&e.key!=="ArrowLeft")return;
+  const cur=TABS.findIndex(t=>$("tab-"+t).getAttribute("aria-selected")==="true");
+  const nx=TABS[(cur+(e.key==="ArrowRight"?1:TABS.length-1))%TABS.length];
+  showTab(nx);$("tab-"+nx).focus();e.preventDefault();
+});
+
+/* Öva: tre rätt i rad klarar en fråga. Ett fel nollställer och frågan kommer tillbaka efter några andra. */
+let turn=0,seenAt={},retry=[],cur=null,locked=false,sessR=0,sessW=0;
+
+function pickNext(){
+  const incl=$("incDone").checked;
+  const open=Q.map((_,i)=>i).filter(i=>incl||P(i).s<NEED);
+  const due=retry.find(x=>turn>=x.at);
+  if(due){retry=retry.filter(x=>x!==due);return due.id}
+  const queued=new Set(retry.map(x=>x.id));
+  let pool=open.filter(i=>!queued.has(i));
+  const rested=pool.filter(i=>!(i in seenAt)||turn-seenAt[i]>=3);
+  if(rested.length)pool=rested;
+  if(!pool.length){
+    if(retry.length){const x=retry.shift();return x.id}
+    return null;
+  }
+  const w=pool.map(i=>{const p=P(i);return p.s>=NEED?1:p.s===0?(p.w>0?6:3):p.s===1?2:1.5});
+  let r=Math.random()*w.reduce((a,b)=>a+b,0);
+  for(let k=0;k<pool.length;k++){r-=w[k];if(r<=0)return pool[k]}
+  return pool[pool.length-1];
+}
+function renderPips(s){[...$("pips").children].forEach((d,k)=>d.classList.toggle("on",k<s))}
+function renderSess(){$("sess").textContent="Den här omgången: "+sessR+" rätt, "+sessW+" fel"}
+
+function showQ(){
+  locked=false;
+  cur=pickNext();
+  const done=cur===null;
+  $("quiz").hidden=done;$("allDone").hidden=!done;
+  renderSess();
+  if(done)return;
+  const it=Q[cur],p=P(cur);
+  $("qTag").textContent="Fråga #"+pad(cur);
+  renderPips(p.s);
+  $("qState").textContent=(p.s>=NEED?"Klar, repetition":p.s+" av "+NEED+" rätt i rad")+(p.w?" · "+p.w+" fel totalt":"");
+  $("q").textContent=it.q;
+  $("fact").textContent="";$("row").hidden=true;
+  const o=$("opts");o.textContent="";
+  shuffle(it.a.map((t,k)=>({t,ok:k===0}))).forEach((x,n)=>{
+    const b=el("button","opt");b.type="button";b.dataset.ok=x.ok?"1":"";
+    b.append(el("span","k",LETTERS[n]),el("span","t",x.t));
+    b.onclick=()=>answer(b,x.ok);
+    o.appendChild(b);
+  });
+}
+function answer(btn,ok){
+  if(locked)return;locked=true;
+  const i=cur,it=Q[i],p=P(i);
+  document.querySelectorAll("#opts .opt").forEach(x=>x.disabled=true);
+  turn++;seenAt[i]=turn;
+  const f=$("fact");f.textContent="";
+  const b=el("b");
+  if(ok){
+    p.s=Math.min(NEED,p.s+1);p.r++;sessR++;
+    btn.classList.add("right");
+    b.textContent=p.s>=NEED?"Rätt. Frågan är klar":"Rätt";
+    f.append(b,it.f);
+  }else{
+    p.s=0;p.w++;sessW++;
+    retry.push({id:i,at:turn+3});
+    btn.classList.add("wrong");
+    const r=document.querySelector('#opts .opt[data-ok="1"]');if(r)r.classList.add("right");
+    b.textContent="Fel";
+    f.append(b,"Rätt svar: "+it.a[0]+". "+it.f,el("p",null,"Frågan kommer tillbaka om några frågor."));
+  }
+  setP(i,p);renderGauge();renderPips(p.s);renderSess();
+  $("qState").textContent=(p.s>=NEED?"Klar":p.s+" av "+NEED+" rätt i rad")+(p.w?" · "+p.w+" fel totalt":"");
+  $("row").hidden=false;$("next").focus({preventScroll:true});
+}
+$("next").onclick=showQ;
+$("incDone").onchange=showQ;
+$("doneReview").onclick=()=>{$("incDone").checked=true;showQ()};
+
+let armTimer=null;
+function disarm(){const b=$("reset");b.dataset.arm="";b.textContent="Nollställ framsteg";clearTimeout(armTimer)}
+$("reset").onclick=()=>{
+  const b=$("reset");
+  if(b.dataset.arm!=="1"){b.dataset.arm="1";b.textContent="Tryck igen för att nollställa";armTimer=setTimeout(disarm,4000);return}
+  disarm();
+  prog={};save();turn=0;seenAt={};retry=[];sessR=0;sessW=0;
+  renderGauge();showQ();buildDeck();
+  if(!$("p-lista").hidden)renderList();
+};
+
+document.addEventListener("keydown",e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  const t=e.target;
+  if(t&&(t.tagName==="INPUT"||t.tagName==="SELECT"||t.tagName==="TEXTAREA"))return;
+  if($("p-ova").hidden||$("quiz").hidden)return;
+  const k=e.key.toLowerCase();
+  if(!locked){
+    if(k.length!==1)return;
+    const m="12345".indexOf(k),n="abcde".indexOf(k),idx=m>=0?m:n;
+    if(idx>=0){const b=$("opts").children[idx];if(b)b.click()}
+    return;
+  }
+  if((e.key==="Enter"||e.key===" ")&&document.activeElement===document.body){e.preventDefault();$("next").click()}
+});
+
+/* Kort: vänd kortet och bedöm dig själv. Kunde du det lämnar kortet högen, annars hamnar det sist. */
+let deck=[],deckTotal=0,known=0,flipped=false,fcDirty=false,fcFocus=false;
+function buildDeck(){
+  const mode=$("fcSet").value;
+  let ids=Q.map((_,i)=>i).filter(i=>{const p=P(i);return mode==="all"||(mode==="open"&&p.s<NEED)||(mode==="hard"&&p.w>0)});
+  if($("fcShuffle").checked)ids=shuffle(ids);
+  deck=ids;deckTotal=ids.length;known=0;flipped=false;fcDirty=false;fcFocus=false;
+  renderFc();
+}
+function renderFc(){
+  const card=$("fcCard");card.textContent="";
+  $("fcLeft").textContent="Kvar "+deck.length+" · Kunde "+known;
+  $("fcBar").style.width=(deckTotal?known/deckTotal*100:0)+"%";
+  if(!deck.length){
+    const mode=$("fcSet").value;
+    card.append(el("h2","q",deckTotal?"Högen är genomgången":"Inga kort i den här högen"));
+    card.append(el("p","note",deckTotal
+      ?"Du kunde "+known+" av "+deckTotal+" kort. Börja om för att köra högen igen."
+      :mode==="hard"?"Du har inte missat några frågor än. Svara på några i Öva först."
+      :"Alla frågor är klara i Öva. Välj Alla frågor för att köra hela högen."));
+    const row=el("div","row");const b=el("button","btn","Börja om");b.type="button";b.onclick=buildDeck;row.appendChild(b);card.appendChild(row);
+    return;
+  }
+  const i=deck[0],it=Q[i];
+  const meta=el("div","meta");meta.appendChild(el("span","tag","Kort #"+pad(i)));
+  const st=status(i);meta.appendChild(el("span","meta-t","Öva: "+st.t));
+  card.append(meta,el("h2","q",it.q));
+  if(!flipped){
+    const row=el("div","row");const b=el("button","btn","Vänd kortet");b.type="button";b.id="fcFlip";
+    b.onclick=()=>{flipped=true;fcFocus=true;renderFc()};row.appendChild(b);card.appendChild(row);
+  }else{
+    const a=el("div","ans-block");a.append(el("b",null,"Rätt svar"),it.a[0]);
+    const f=el("div","fact");f.append(el("b",null,"Varför"),it.f);f.style.marginTop="12px";
+    const rate=el("div","rate");
+    const no=el("button","btn alt","Behöver öva");no.type="button";no.id="fcNo";
+    const yes=el("button","btn","Kunde det");yes.type="button";yes.id="fcKnow";
+    no.onclick=()=>{deck.push(deck.shift());flipped=false;fcDirty=true;fcFocus=true;renderFc()};
+    yes.onclick=()=>{deck.shift();known++;flipped=false;fcDirty=true;fcFocus=true;renderFc()};
+    rate.append(no,yes);card.append(a,f,rate);
+  }
+  const t=$(flipped?"fcKnow":"fcFlip");
+  if(fcFocus&&t)t.focus({preventScroll:true});
+}
+$("fcSet").onchange=buildDeck;
+$("fcShuffle").onchange=buildDeck;
+$("fcRestart").onclick=buildDeck;
+
+/* Lista */
+let filt="all";const openSet=new Set();
+function syncOpenBtn(){
+  const all=[...document.querySelectorAll("#items .item")];
+  $("openAll").textContent=all.length&&all.every(d=>d.open)?"Stäng alla":"Öppna alla";
+  $("openAll").disabled=!all.length;
+}
+function renderList(){
+  const term=$("search").value.trim().toLowerCase();
+  const idx=Q.map((_,i)=>i).filter(i=>{
+    const p=P(i);
+    if(filt==="hard"&&!(p.w>0))return false;
+    if(filt==="open"&&p.s>=NEED)return false;
+    if(filt==="done"&&p.s<NEED)return false;
+    if(term){const it=Q[i];if(!(it.q+" "+it.a[0]+" "+it.f).toLowerCase().includes(term))return false}
+    return true;
+  });
+  if($("sort").value==="hard")idx.sort((a,b)=>P(b).w-P(a).w||P(a).s-P(b).s||a-b);
+  const box=$("items");box.textContent="";
+  idx.forEach(i=>{
+    const it=Q[i],p=P(i),st=status(i);
+    const d=el("details","item");d.open=openSet.has(i);
+    d.addEventListener("toggle",()=>{if(d.open)openSet.add(i);else openSet.delete(i);syncOpenBtn()});
+    const s=el("summary");
+    s.append(el("span","num","#"+pad(i)),el("span","qt",it.q),el("span","chip s-"+st.k,st.t),el("span","pm"));
+    const body=el("div","body");
+    const a=el("div","ans-block");a.append(el("b",null,"Rätt svar"),it.a[0]);
+    const f=el("div","fact");f.append(el("b",null,"Varför"),it.f);
+    const w=el("div");w.appendChild(el("p","wr-t","Fel alternativ i spelet"));
+    const ul=el("ul","wr");it.a.slice(1).forEach(x=>ul.appendChild(el("li",null,x)));w.appendChild(ul);
+    body.append(a,f,w,el("p","stat","Rätt "+p.r+" · Fel "+p.w+" · I rad "+p.s));
+    d.append(s,body);box.appendChild(d);
+  });
+  if(!idx.length)box.appendChild(el("div","card","Inga frågor matchar. Ändra sökningen eller filtret."));
+  $("count").textContent="Visar "+idx.length+" av "+Q.length;
+  syncOpenBtn();
+}
+$("search").oninput=renderList;
+$("sort").onchange=renderList;
+document.querySelectorAll(".fchip").forEach(b=>{
+  b.onclick=()=>{
+    filt=b.dataset.f;
+    document.querySelectorAll(".fchip").forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));
+    renderList();
+  };
+});
+$("openAll").onclick=()=>{
+  const all=[...document.querySelectorAll("#items .item")];
+  const allOpen=all.every(d=>d.open);
+  all.forEach(d=>{d.open=!allOpen});
+};
+
+renderGauge();
+showQ();
+</script>
+
+</body></html>
